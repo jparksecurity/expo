@@ -24,8 +24,8 @@ private const val moduleName = "ExpoClipboard"
 private val TAG = ClipboardModule::class.java.simpleName
 
 // this must match the one from `res/xml/clipboard_provider_paths.xml`
-const val clipboardDirectoryName = ".clipboard"
-const val clipboardChangedEventName = "onClipboardChanged"
+const val CLIPBOARD_DIRECTORY_NAME = ".clipboard"
+const val CLIPBOARD_CHANGED_EVENT_NAME = "onClipboardChanged"
 
 class ClipboardModule : Module() {
   override fun definition() = ModuleDefinition {
@@ -90,7 +90,7 @@ class ClipboardModule : Module() {
     //endregion
 
     // region Events
-    events(clipboardChangedEventName)
+    events(CLIPBOARD_CHANGED_EVENT_NAME)
 
     onCreate {
       clipboardEventEmitter = ClipboardEventEmitter()
@@ -102,7 +102,7 @@ class ClipboardModule : Module() {
       try {
         moduleCoroutineScope.cancel(ModuleDestroyedException())
       } catch (e: IllegalStateException) {
-        Log.e(TAG, "The coroutine scope has no job in it")
+        // Ignore: The coroutine scope has no job in it
       }
     }
 
@@ -128,7 +128,7 @@ class ClipboardModule : Module() {
   private val moduleCoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   private val clipboardCacheDir: File by lazy {
-    File(context.cacheDir, clipboardDirectoryName).also { it.mkdirs() }
+    File(context.cacheDir, CLIPBOARD_DIRECTORY_NAME).also { it.mkdirs() }
   }
 
   // region Clipboard event emitter
@@ -151,7 +151,7 @@ class ClipboardModule : Module() {
         ?.takeIf { it.itemCount >= 1 }
         ?.let { clip ->
           this@ClipboardModule.sendEvent(
-            clipboardChangedEventName,
+            CLIPBOARD_CHANGED_EVENT_NAME,
             bundleOf(
               "content" to (clip.getItemAt(0).text?.toString() ?: "")
             )
