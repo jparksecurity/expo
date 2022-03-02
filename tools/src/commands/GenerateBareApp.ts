@@ -6,10 +6,14 @@ import { runExpoCliAsync } from '../ExpoCLI';
 
 async function action(appName: string, packageNames: string[], options: any) {
   // todo:
+  // if appName === ''
   // if packageNames.length === 0
+  // sdk option -- expo-template-bare-minimum@sdk-45
+  // configure autolinking to exclude dev-client / expo update packages
 
   const { clean, outDir = 'bare-apps' } = options;
 
+  const repoRoot = path.resolve(__dirname, '../../../');
   const projectsDir = path.resolve(process.cwd(), outDir);
   const projectDir = path.resolve(process.cwd(), projectsDir, appName);
 
@@ -32,11 +36,14 @@ async function action(appName: string, packageNames: string[], options: any) {
     'expo-dev-menu-interface',
   ];
 
-  await runExpoCliAsync('init', [appName, '--no-install', '--template', 'blank'], {
+  await runExpoCliAsync('init', [appName, '--no-install', '--template', 'bare-minimum'], {
     cwd: projectsDir,
   });
 
   const pkg = require(path.resolve(projectDir, 'package.json'));
+
+  pkg['expo'] = pkg['expo'] ?? {};
+  pkg['expo']['autolinking'] = { exclude: [] };
 
   pkg['scripts']['postinstall'] = 'expo-yarn-workspaces postinstall';
   pkg['main'] = '__generated__/AppEntry.js';
@@ -59,6 +66,12 @@ async function action(appName: string, packageNames: string[], options: any) {
   console.log('Yarning');
   await spawnAsync('yarn', [], { cwd: projectDir });
 
+  // Android workarounds
+  fs.symlinkSync(
+    path.resolve(repoRoot, 'packages/expo'),
+    path.resolve(projectDir, 'node_modules/expo')
+  );
+
   await runExpoCliAsync('prebuild', [], { cwd: projectDir });
 
   const ncl = path.resolve(__dirname, '../../../apps/native-component-list');
@@ -78,7 +91,7 @@ export default (program: Command) => {
   program
     .command('generate-bare-app [appName] [packageNames...]')
     .option('-c, --clean', 'Rebuild [appName] from scratch')
-    .option('-o, --outDir <string>', 'Specifies the director to build the project in')
-    .description(`Generates an app for the specified packages`)
+    .option('-o, --outDir <string>', 'Specifies the directory to build the project in')
+    .description(`Generates a bare app with the specified packages symlinked`)
     .asyncAction(action);
 };
