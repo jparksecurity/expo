@@ -179,11 +179,11 @@ class ImagePickerModule(
   //region helpers
 
   private fun getMediaLibraryPermissions(writeOnly: Boolean): Array<String> {
-    return if (writeOnly) {
-      arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    } else {
-      arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)
-    }
+    return listOfNotNull(
+      Manifest.permission.WRITE_EXTERNAL_STORAGE,
+      Manifest.permission.READ_EXTERNAL_STORAGE.takeIf { !writeOnly },
+      Manifest.permission.ACCESS_MEDIA_LOCATION.takeIf { Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q }
+    ).toTypedArray()
   }
 
   private fun launchCameraWithPermissionsGranted(promise: Promise, cameraIntent: Intent, pickerOptions: ImagePickerOptions) {
